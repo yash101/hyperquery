@@ -1,0 +1,12 @@
+#!/bin/bash
+
+export DEBUG=true
+export HYPERCODE_DATA_DIR=$(pwd)/test-dir
+export HYPERCODE_SOCKET=$HYPERCODE_DATA_DIR/hypercode.sock
+
+mkdir -p $HYPERCODE_DATA_DIR
+
+echo "Debug: ${DEBUG}"
+echo "HYPERCODE_DATA_DIR: ${HYPERCODE_DATA_DIR}"
+echo "HYPERCODE_SOCKET: ${HYPERCODE_SOCKET}"
+

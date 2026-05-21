@@ -1,0 +1,31 @@
+{
+  "name": "hypercode",
+  "version": "0.1.0",
+  "description": "Symbolic code search for agent context.",
+  "type": "module",
+  "bin": {
+    "hypercode": "./dist/cli/hypercode.js",
+    "hypercode-daemon": "./dist/daemon/hypercode-daemon.js",
+    "hypercode-bench": "./dist/bench/hypercode-bench.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start-daemon": "node dist/daemon/hypercode-daemon.js",
+    "cli": "node dist/cli/hypercode.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "chokidar": "^4.0.3",
+    "commander": "^13.1.0",
+    "lmdb": "^3.2.6",
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "vitest": "^3.0.8"
+  }
+}
