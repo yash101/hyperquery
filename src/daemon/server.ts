@@ -1,8 +1,7 @@
 import fs from "node:fs";
-import net from "node:net";
-import type { Server } from "node:net";
+import http, { type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { randomUUID } from "node:crypto";
 import { IndexerService } from "../index/indexer.js";
-import { createFrameReader, writeFrame } from "../protocol/framing.js";
 import type { RpcRequest, RpcResponse } from "../protocol/messages.js";
 import { socketPath } from "../util/paths.js";
 
@@ -12,13 +11,10 @@ export class HyperDaemon {
   constructor(private service = new IndexerService(), private sock = socketPath()) {}
 
   async start(): Promise<void> {
-    await this.service.startWatchers();
     if (fs.existsSync(this.sock)) fs.unlinkSync(this.sock);
-    this.server = net.createServer((socket) => {
-      socket.on("data", createFrameReader((message) => {
-        void this.handle(message as RpcRequest).then((response) => writeFrame(socket, response));
-      }));
-    });
+
+    this.server = http.createServer((req, res) => this.handleHttp(req, res));
+
     await new Promise<void>((resolve, reject) => {
       this.server?.once("error", reject);
       this.server?.listen(this.sock, resolve);
@@ -29,6 +25,24 @@ export class HyperDaemon {
     this.service.close();
     await new Promise<void>((resolve) => this.server?.close(() => resolve()));
     if (fs.existsSync(this.sock)) fs.unlinkSync(this.sock);
+  }
+
+  private async handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      if (req.method !== "POST" || req.url !== "/rpc") {
+        writeJson(res, 404, { ok: false, error: "Not found" });
+        return;
+      }
+      const request = await readJson(req) as RpcRequest;
+      const response = await this.handle(request);
+      writeJson(res, response.ok ? 200 : 400, response);
+    } catch (error) {
+      writeJson(res, 500, {
+        id: randomUUID(),
+        ok: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   private async handle(request: RpcRequest): Promise<RpcResponse> {
@@ -97,4 +111,28 @@ export class HyperDaemon {
 
 function ok(id: string, result: unknown): RpcResponse {
   return { id, ok: true, result };
+}
+
+function readJson(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.once("error", reject);
+    req.once("end", () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
+
+function writeJson(res: ServerResponse, statusCode: number, body: unknown): void {
+  const text = JSON.stringify(body);
+  res.writeHead(statusCode, {
+    "content-type": "application/json",
+    "content-length": Buffer.byteLength(text)
+  });
+  res.end(text);
 }

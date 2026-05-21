@@ -29,3 +29,5 @@ export interface RpcResponse {
   result?: unknown;
   error?: string;
 }
+
+export type RpcMethod = RpcRequest["method"];

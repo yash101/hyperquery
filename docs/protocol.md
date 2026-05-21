@@ -1,6 +1,8 @@
 # Protocol
 
-The CLI talks to `hypercode-daemon` over a Unix domain socket using length-prefixed JSON frames.
+The CLI talks to `hypercode-daemon` over HTTP on a Unix domain socket.
+
+All RPC calls are `POST /rpc` with a JSON body.
 
 Each request includes:
 
